@@ -5,7 +5,6 @@ def parse_file(filepath):
     """Reads the file and returns both dependency rules and rows."""
     dependencies = defaultdict(set)
     rows = []
-    # reading_rules = True  # Flag to separate rules from rows
 
     try:
         with open(filepath, 'r') as file:
@@ -63,18 +62,15 @@ def sum_middle_numbers(valid_rows):
     return total_sum
 
 def main():
-    # File path for the single file containing both ruleset and numbers
+
     file_path = "ruleset.txt"
     
-    # Parse the file to extract dependencies and number rows
     dependencies, rows = parse_file(file_path)
     if not dependencies or not rows:
         return
 
-    # Validate and process rows based on the dependencies
     valid_rows = process_numbers(rows, dependencies)
 
-    # Print the valid rows
     print("Valid Rows:")
     for row in valid_rows:
         print(row)
