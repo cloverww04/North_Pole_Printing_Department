@@ -1,83 +1,60 @@
-import os
-from collections import defaultdict
+from functools import cmp_to_key
 
-def parse_file(filepath):
-    """Reads the file and returns both dependency rules and rows."""
-    dependencies = defaultdict(set)
-    rows = []
+# Function to load rules from a file
+def load_rules(filename):
+    rules = []
+    with open(filename, 'r') as file:
+        for line in file:
+            a, b = map(int, line.strip().split('|'))
+            rules.append((a, b))
+    return rules
 
-    try:
-        with open(filepath, 'r') as file:
-            for line in file:
-                line = line.strip()
-                if not line:
-                    continue  # Skip empty lines
-                
-                if line.startswith("#"):
-                    continue
-                
-                if "|" in line:
-                    left, right = line.split('|')
-                    dependencies[right].add(left)
-                else:
-                    rows.append(line.split(','))
-                    
-    except FileNotFoundError:
-        print(f"Error: File '{filepath}' not found.")
-        return None, None
+# Function to load data from a file
+def load_data(filename):
+    data = []
+    with open(filename, 'r') as file:
+        for line in file:
+            row = tuple(map(int, line.strip().split(',')))
+            data.append(row)
+    return data
 
-    return dependencies, rows
+# Load the rules and data
+rules = load_rules('rules.txt')
+data = load_data('data.txt')
 
-def validate_row(row, dependencies):
-    """Checks if a row satisfies the dependency rules."""
-    seen = set()
-    for number in row:
-        if number in dependencies:
-            for dependency in dependencies[number]:
-                if dependency in row and dependency not in seen:
-                    print(f"Dependency {dependency} for {number} not met in row {row}")
-                    return False
-        seen.add(number)
-    return True
+# Create a precedence dictionary
+precedence = {}
+for a, b in rules:
+    if a not in precedence:
+        precedence[a] = set()
+    precedence[a].add(b)
 
-def process_numbers(rows, dependencies):
-    """Processes rows, keeping only those that satisfy the dependencies."""
-    valid_rows = []
-    for row in rows:
-        print(f'Checking row: {row}')
-        if validate_row(row, dependencies):
-            valid_rows.append(row)
-            print(f'Row is valid: {row}')
-        else:
-            print(f"Skipping invalid row: {row}")
-    return valid_rows
+# compare two numbers based on the rules
+def compare(a, b):
+    if a in precedence and b in precedence[a]:
+        return -1
+    elif b in precedence and a in precedence[b]:
+        return 1
+    return 0
 
-def sum_middle_numbers(valid_rows):
-    """Calculates the sum of the middle numbers from each valid row."""
-    total_sum = 0
-    for row in valid_rows:
-        middle_index = len(row) // 2
-        middle_number = int(row[middle_index])  # Convert to integer
-        total_sum += middle_number
-    return total_sum
+# Sort the data 
+sorted_data_with_flags = []
+invalid_list = []
+for row in data:
+    sorted_row = sorted(row, key=cmp_to_key(compare))
+    flag = sorted_row != list(row) 
+    sorted_data_with_flags.append((sorted_row, flag))
 
-def main():
+# Output the sorted data with flags and store the invalid rows
+for row, flag in sorted_data_with_flags:
+    if flag: 
+        invalid_list.append(row)
 
-    file_path = "ruleset.txt"
+# Calculate middle page numbers
+totalSum = 0
+for row in invalid_list:
+    middle_index = len(row) // 2
+    middle_number = row[middle_index]
+    totalSum += middle_number
     
-    dependencies, rows = parse_file(file_path)
-    if not dependencies or not rows:
-        return
-
-    valid_rows = process_numbers(rows, dependencies)
-
-    print("Valid Rows:")
-    for row in valid_rows:
-        print(row)
-
-    # Calculate the total sum of middle numbers from valid rows
-    total_sum = sum_middle_numbers(valid_rows)
-    print(f"Total sum of middle numbers: {total_sum}")
-
-if __name__ == "__main__":
-    main()
+print(f"Total: {totalSum}")
